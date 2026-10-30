@@ -6,21 +6,23 @@ import './rooms/typewriter.css';
 import './rooms/cassette.css';
 import './rooms/polaroid.css';
 
-// Paper/film grain as a small cached PNG — far cheaper to paint than an SVG turbulence filter.
+// Paper/film grain: the original soft SVG turbulence, rasterised once to a PNG so it stays cheap to paint.
 (function makeNoise() {
-  const S = 180;
-  const c = document.createElement('canvas');
-  c.width = c.height = S;
-  const x = c.getContext('2d');
-  const img = x.createImageData(S, S);
-  for (let i = 0; i < img.data.length; i += 4) {
-    img.data[i] = 140;
-    img.data[i + 1] = 127;
-    img.data[i + 2] = 107;
-    img.data[i + 3] = Math.random() * 120;
-  }
-  x.putImageData(img, 0, 0);
-  document.documentElement.style.setProperty('--noise', `url(${c.toDataURL('image/png')})`);
+  const svg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .5  0 0 0 0 .42  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>";
+  const svgUrl = `data:image/svg+xml;utf8,${svg}`;
+  const root = document.documentElement.style;
+  root.setProperty('--noise', `url("${svgUrl}")`);
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const c = document.createElement('canvas');
+      c.width = c.height = 220;
+      c.getContext('2d').drawImage(img, 0, 0);
+      root.setProperty('--noise', `url(${c.toDataURL('image/png')})`);
+    } catch {}
+  };
+  img.src = svgUrl;
 })();
 
 createRoot(document.getElementById('root')).render(<App />);
