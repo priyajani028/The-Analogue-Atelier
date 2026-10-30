@@ -26,7 +26,7 @@ export default function App() {
       setLeaving(false);
       window.location.hash = id;
       window.scrollTo(0, 0);
-    }, 480);
+    }, 300);
   };
 
   return (

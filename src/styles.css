@@ -27,19 +27,21 @@ button { font: inherit; color: inherit; }
 
 .app {
   position: relative; min-height: 100vh; overflow-x: hidden;
-  background:
-    radial-gradient(ellipse 70% 55% at 50% 12%, rgba(255, 214, 160, 0.11), transparent 62%),
-    radial-gradient(ellipse at 50% 45%, #2a2019 0%, #17120f 55%, #0a0806 100%);
-  background-attachment: fixed;
+  background: #0b0907;
 }
 .app::before {
   content: ''; position: fixed; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(91deg, rgba(255,255,255,.013) 0 2px, transparent 2px 9px, rgba(0,0,0,.05) 9px 10px, transparent 10px 23px);
+  background:
+    repeating-linear-gradient(91deg, rgba(255,255,255,.013) 0 2px, transparent 2px 9px, rgba(0,0,0,.05) 9px 10px, transparent 10px 23px),
+    radial-gradient(ellipse 70% 55% at 50% 12%, rgba(255, 214, 160, 0.11), transparent 62%),
+    radial-gradient(ellipse at 50% 45%, #2a2019 0%, #17120f 55%, #0a0806 100%);
 }
 .grain {
-  position: fixed; inset: -50%; pointer-events: none; z-index: 150; opacity: .5; mix-blend-mode: overlay;
-  background-image: var(--noise); animation: grain 1.2s steps(6) infinite;
+  position: fixed; inset: -20%; pointer-events: none; z-index: 150; opacity: .14;
+  background-image: var(--noise); animation: grain 1.6s steps(4) infinite; will-change: transform;
 }
+@media (prefers-reduced-motion: reduce) { .grain { animation: none; } }
+.tilt { will-change: transform; }
 @keyframes grain {
   0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -3%); }
   60% { transform: translate(-2%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
@@ -70,13 +72,13 @@ button { font: inherit; color: inherit; }
 
 /* scene transitions — a slow dolly toward the object */
 .scene { position: relative; z-index: 1; padding-top: 96px; }
-.scene.enter { animation: dolly-in 1s cubic-bezier(.2,.75,.2,1) both; }
-.scene.leave { animation: dolly-out .48s cubic-bezier(.6,0,.8,.3) both; }
+.scene.enter { animation: dolly-in .8s cubic-bezier(.2,.75,.2,1) both; }
+.scene.leave { animation: dolly-out .3s cubic-bezier(.6,0,.8,.3) both; }
 @keyframes dolly-in {
-  from { opacity: 0; transform: perspective(1400px) translateZ(-260px) rotateX(6deg); filter: blur(10px); }
+  from { opacity: 0; transform: perspective(1400px) translateZ(-220px) rotateX(5deg); }
 }
 @keyframes dolly-out {
-  to { opacity: 0; transform: perspective(1400px) translateZ(220px); filter: blur(8px); }
+  to { opacity: 0; transform: perspective(1400px) translateZ(180px); }
 }
 @keyframes rise { from { opacity: 0; transform: translateY(40px); } }
 
@@ -122,10 +124,15 @@ h1 em, h2 em { font-style: italic; color: var(--brass-hi); }
 .plinth:hover .plinth-light { opacity: 1; }
 .plinth-obj {
   position: relative; z-index: 2; height: 260px; width: 100%; display: flex; align-items: flex-end; justify-content: center;
-  transition: transform .7s cubic-bezier(.2,.8,.2,1), filter .7s;
-  filter: drop-shadow(0 26px 22px rgba(0,0,0,.65)) brightness(.86) saturate(.9);
+  transition: transform .7s cubic-bezier(.2,.8,.2,1);
 }
-.plinth:hover .plinth-obj { transform: translateY(-18px) scale(1.04) rotate(-1deg); filter: drop-shadow(0 50px 34px rgba(0,0,0,.5)) brightness(1.03); }
+.plinth-obj::after {
+  content: ''; position: absolute; left: 15%; right: 15%; bottom: -14px; height: 30px; z-index: -1; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,.7), transparent 70%);
+  transition: transform .7s cubic-bezier(.2,.8,.2,1), opacity .7s;
+}
+.plinth:hover .plinth-obj { transform: translateY(-18px) scale(1.04) rotate(-1deg); }
+.plinth:hover .plinth-obj::after { transform: translateY(18px) scale(1.15); opacity: .6; }
 .plinth-top {
   width: 280px; height: 46px; margin-top: -22px; border-radius: 50%; position: relative; z-index: 1;
   background: radial-gradient(ellipse at 50% 35%, #3e322b, #1a1411 72%);
@@ -175,17 +182,32 @@ h1 em, h2 em { font-style: italic; color: var(--brass-hi); }
 /* ───────────── modal (printed sheet) ───────────── */
 .modal {
   position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 24px;
-  background: rgba(8,6,5,.82); backdrop-filter: blur(8px);
-  animation: fade .5s ease both;
+  background: rgba(8,6,5,.9); overflow-y: auto;
+  animation: fade .4s ease both;
 }
 @keyframes fade { from { opacity: 0; } }
-.modal-inner { display: flex; gap: 56px; align-items: center; animation: dolly-in .9s cubic-bezier(.2,.75,.2,1) both; flex-wrap: wrap; justify-content: center; }
+.modal-inner { display: flex; gap: 56px; align-items: center; margin: auto; animation: dolly-in .8s cubic-bezier(.2,.75,.2,1) both; flex-wrap: wrap; justify-content: center; }
 .sheet-holder { position: relative; flex: none; }
 .print-sheet { position: absolute; left: 0; top: 0; width: 600px; height: 1000px; transform-origin: top left; box-shadow: 0 40px 80px rgba(0,0,0,.6); }
 .modal-side { width: 300px; }
 .modal-side h2 { font: 300 52px/1 var(--serif); margin: 16px 0; }
 .modal-side p { font: italic 300 20px/1.5 var(--serif); color: var(--muted); }
 .stack { display: flex; flex-direction: column; gap: 10px; margin-top: 26px; }
+
+.touch-only { display: none !important; }
+@media (hover: none) { .touch-only { display: inline-block !important; } }
+
+@media (max-width: 600px) {
+  .nav { gap: 14px; }
+  .nav button { font-size: 15px !important; }
+  .nav button span { margin-right: 5px; }
+  .salon-head p { font-size: 19px; }
+  .plinth { width: 100%; max-width: 320px; }
+  .salon-stage { gap: 56px; margin-top: 30px; }
+  .modal-side { width: 100%; max-width: 340px; }
+  .modal-inner { gap: 28px; }
+  .hint { font-size: 10px; }
+}
 
 @media (max-width: 900px) {
   .top { grid-template-columns: 1fr; gap: 14px; justify-items: center; padding: 16px 16px 26px; }

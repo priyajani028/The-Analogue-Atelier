@@ -12,7 +12,7 @@
 }
 .deck::after { /* scuffs */
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: var(--noise); opacity: .25; mix-blend-mode: overlay;
+  background: var(--noise); opacity: .12;
 }
 .deck-handle {
   position: absolute; top: 120px; bottom: 120px; width: 30px;

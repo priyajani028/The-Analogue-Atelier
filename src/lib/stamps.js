@@ -140,3 +140,10 @@ export function stampSvg(id) {
   return cache[id];
 }
 export const stampMeta = (id) => STAMPS.find((s) => s.id === id);
+
+const urls = {};
+/** Stamp as an image URL — rasterised once by the browser instead of re-filtering live SVG every frame. */
+export function stampUrl(id) {
+  if (!urls[id]) urls[id] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(stampSvg(id));
+  return urls[id];
+}

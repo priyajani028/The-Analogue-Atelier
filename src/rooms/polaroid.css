@@ -7,7 +7,11 @@
 .pol-camera { position: relative; display: flex; flex-direction: column; align-items: center; perspective: 1400px; padding-top: 20px; }
 .pol-tilt { position: relative; z-index: 2; }
 
-.cam { position: relative; width: 420px; height: 400px; filter: drop-shadow(0 50px 50px rgba(0,0,0,.6)); }
+.cam { position: relative; width: 420px; height: 400px; }
+.cam::after {
+  content: ''; position: absolute; left: 6%; right: 6%; bottom: -36px; height: 60px; z-index: -1; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,.7), transparent 70%);
+}
 .cam-hump {
   position: absolute; left: 50%; top: -22px; width: 190px; height: 40px; transform: translateX(-50%);
   border-radius: 14px 14px 0 0; background: linear-gradient(180deg, #2b2522, #17120f);
@@ -134,7 +138,7 @@
 .photo-tools span { flex: 1; }
 .photo-tools button {
   width: 30px; height: 30px; padding: 0; border-radius: 50%; cursor: pointer; display: grid; place-items: center;
-  background: rgba(20,16,13,.72); border: 1px solid rgba(231,207,152,.3); color: var(--cream); backdrop-filter: blur(6px);
+  background: rgba(20,16,13,.82); border: 1px solid rgba(231,207,152,.3); color: var(--cream);
   transition: background .2s, color .2s, border-color .2s, opacity .2s;
 }
 .photo-tools button:hover { color: var(--brass-hi); border-color: var(--brass); }
@@ -169,8 +173,14 @@
 .flash { position: fixed; inset: 0; background: #fffdf6; z-index: 200; pointer-events: none; animation: flash .9s ease-out forwards; }
 @keyframes flash { 0% { opacity: 0; } 6% { opacity: 1; } 100% { opacity: 0; } }
 
+@media (hover: none) { .photo-tools { opacity: 1; transform: none; } }
 @media (max-width: 1000px) {
-  .pol-layout { grid-template-columns: 1fr; padding: 0 16px; }
-  .cam { transform: scale(.8); }
+  .pol-layout { grid-template-columns: 1fr; padding: 0 16px; gap: 24px; }
   .pol-table { min-height: 560px; }
+  .pol-tools { left: 24px; right: 24px; top: 56px; flex-wrap: wrap; }
+  .pol-tip { width: 100%; margin-bottom: 6px; }
+}
+@media (max-width: 520px) {
+  .pol-camera { zoom: .74; }
+  .pol-table { min-height: 620px; }
 }

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Tilt from '../components/Tilt';
 import RoomHead from '../components/RoomHead';
 import useFitScale from '../components/useFitScale';
 import { sfx } from '../lib/sound';
-import { STAMPS, stampSvg } from '../lib/stamps';
+import { STAMPS, stampMeta, stampUrl } from '../lib/stamps';
 import { CW, LH, TOP, MARGIN, COLS, MAX_LINES, PAGE_W, PAGE_H } from '../lib/layout';
 import { sheetToPNG, download } from '../lib/exporters';
 import { PAPERS } from '../lib/papers';
@@ -14,6 +14,7 @@ const STAGE_H = 940;
 const STRIKE_X = 490;
 const PAPER_LEFT = STRIKE_X - MARGIN - CW / 2;
 const BASE = 348;
+const SENT = '\u00a0\u00a0\u00a0\u00a0';
 
 const KEYROWS = [
   [...'1234567890-'.split('').map((k) => ({ id: k, label: k })), { id: 'back', label: '⌫' }],
@@ -45,7 +46,7 @@ const ribbon = (sx, sy) => {
   return { left: sx, top: sy, width: Math.hypot(dx, dy), transform: `rotate(${(Math.atan2(dy, dx) * 180) / Math.PI}deg)` };
 };
 
-export function Sheet({ lines, stamps, still }) {
+export const Sheet = memo(function Sheet({ lines, stamps, still }) {
   return (
     <div className="sheet">
       {lines.map((l, li) =>
@@ -72,12 +73,19 @@ export function Sheet({ lines, stamps, still }) {
           className="stamp"
           style={{ left: s.x, top: s.y, opacity: s.o, transform: `translate(-50%,-50%) rotate(${s.r}deg)` }}
         >
-          <div className={still ? '' : 'stamp-in'} dangerouslySetInnerHTML={{ __html: stampSvg(s.type) }} />
+          <img
+            className={still ? '' : 'stamp-in'}
+            src={stampUrl(s.type)}
+            width={stampMeta(s.type).w}
+            height={stampMeta(s.type).h}
+            alt=""
+            draggable={false}
+          />
         </div>
       ))}
     </div>
   );
-}
+});
 
 export default function Typewriter() {
   const [lines, setLines] = useState([[]]);
@@ -90,12 +98,14 @@ export default function Typewriter() {
   const [spin, setSpin] = useState(0);
   const [paper, setPaper] = useState('ivory');
   const [swap, setSwap] = useState(0);
-  const scale = useFitScale(1260, 0.3);
+  const scale = useFitScale(typeof window !== 'undefined' && window.innerWidth < 700 ? 1000 : 1260, 0.3);
 
   const st = useRef({ lines, phase });
   st.current.phase = phase;
   st.current.lines = lines;
   const timers = useRef({});
+  const ghost = useRef(null);
+  const ghostPrev = useRef(SENT);
 
   const flash = useCallback((id) => {
     setDown(id);
@@ -162,6 +172,13 @@ export default function Typewriter() {
   useEffect(() => {
     const onKey = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.target === ghost.current) {
+        // typing arrives through the input event; just animate the key
+        if (e.key === 'Enter') flash('return');
+        else if (e.key === 'Backspace') flash('back');
+        else if (e.key && e.key.length === 1) flash(e.key === ' ' ? ' ' : keyId(e));
+        return;
+      }
       if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
       if (e.key === 'Escape') return setTool(null);
       if (st.current.phase !== 'desk') return;
@@ -192,8 +209,39 @@ export default function Typewriter() {
     flash(k.id);
   };
 
+  // Phone / tablet keyboards: a hidden textarea receives the text, and we replay the diff
+  const resetGhost = () => {
+    const el = ghost.current;
+    if (!el) return;
+    el.value = SENT;
+    ghostPrev.current = SENT;
+    try {
+      el.setSelectionRange(SENT.length, SENT.length);
+    } catch {}
+  };
+  const onGhostInput = (e) => {
+    const v = e.target.value;
+    const prev = ghostPrev.current;
+    let i = 0;
+    while (i < prev.length && i < v.length && prev[i] === v[i]) i++;
+    for (let k = 0; k < prev.length - i; k++) back();
+    for (const ch of v.slice(i)) {
+      if (ch === '\n') newline();
+      else press(ch);
+    }
+    if (e.nativeEvent.isComposing) ghostPrev.current = v;
+    else resetGhost();
+  };
+  const openKeyboard = () => {
+    const el = ghost.current;
+    if (!el) return;
+    el.focus({ preventScroll: true });
+    resetGhost();
+  };
+
   const onPaper = (e) => {
-    if (!tool || phase !== 'desk') return;
+    if (phase !== 'desk') return;
+    if (!tool) return openKeyboard();
     const { offsetX: x, offsetY: y } = e.nativeEvent;
     setStamps((s) => [...s, { id: Date.now() + Math.random(), type: tool, x, y, r: (Math.random() - 0.5) * 16, o: 0.8 + Math.random() * 0.17 }]);
     sfx.stamp();
@@ -234,6 +282,20 @@ export default function Typewriter() {
       />
 
       <div className="tw-fit" style={{ height: STAGE_H * scale + 20 }}>
+        <textarea
+          ref={ghost}
+          className="tw-ghost"
+          style={{ top: (BASE - 30) * scale }}
+          defaultValue={SENT}
+          onInput={onGhostInput}
+          onCompositionEnd={resetGhost}
+          autoCapitalize="off"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          enterKeyHint="enter"
+          aria-label="Type on the typewriter"
+        />
         <Tilt max={3} base={`translateX(-50%) scale(${scale})`} className="tw-stage">
           <div className="tw-desk-shadow" />
           {/* carriage: moves left as you type */}
@@ -358,12 +420,17 @@ export default function Typewriter() {
                 sfx.tick();
               }}
             >
-              <div className="tray-art" dangerouslySetInnerHTML={{ __html: stampSvg(s.id) }} />
+              <div className="tray-art">
+                <img src={stampUrl(s.id)} alt="" draggable={false} />
+              </div>
               <span>{s.label}</span>
             </button>
           ))}
         </div>
         <div className="tw-actions">
+          <button className="btn touch-only" onClick={openKeyboard}>
+            Open keyboard
+          </button>
           <button className="btn" onClick={() => setStamps((s) => s.slice(0, -1))} disabled={!stamps.length}>
             Lift last stamp
           </button>
